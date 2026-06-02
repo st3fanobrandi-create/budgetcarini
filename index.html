@@ -390,6 +390,15 @@ async function loadFromSheet(){
     const resp=await gvizFetch('Entries');
     entries=gvizToEntries(resp);
     try{const nr=await gvizFetch('Notes');if(nr&&nr.table&&nr.table.rows&&nr.table.rows.length){const t=nr.table.rows.map(r=>r.c&&r.c[0]&&r.c[0].v!=null?String(r.c[0].v):'').join('\n').trim();if(t)document.getElementById('notesArea').value=t;}}catch(_){}
+
+    try{const cr=await gvizFetch('Categories');
+      if(cr&&cr.table&&cr.table.rows){
+        const names=cr.table.rows
+          .map(r=>r.c&&r.c[0]&&r.c[0].v!=null?String(r.c[0].v).trim():'')
+          .filter(v=>v);
+        if(names.length){categories=names;}
+      }
+    }catch(_){}
     try{const ir=await gvizFetch('InvestNotes');if(ir&&ir.table&&ir.table.rows&&ir.table.rows.length){const t=ir.table.rows.map(r=>r.c&&r.c[0]&&r.c[0].v!=null?String(r.c[0].v):'').join('\n').trim();if(t)document.getElementById('investNotesArea').value=t;}}catch(_){}
     const n=entries.length;setSyncing('ok',n+' entr'+(n===1?'y':'ies')+' · '+new Date().toLocaleTimeString());
     renderAll();
