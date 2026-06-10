@@ -514,7 +514,7 @@ function renderBreakdown(){
     const el=document.createElement('div');el.className='cat-item';el.style.cursor='pointer';
     el.innerHTML=`<div class="cat-item-top"><span class="cat-name">${esc(cat)} <span style="font-size:.7rem;color:var(--muted)">${isExpanded?'▲':'▼'}</span></span><span class="cat-amount">${fmtDec(amount)}</span></div><div class="progress-bar"><div class="progress-fill${over?' over':''}" style="width:${pct}%"></div></div><div class="cat-meta"><span class="cat-avg">${avg>0?'Avg: '+fmt(avg):'No history yet'}</span><span class="cat-diff ${diffClass}">${diffText}</span></div>`;
     if(isExpanded){
-      const catEntries=expenses.filter(e=>(e.category||'Uncategorized')===cat).sort((a,b)=>new Date(b.date)-new Date(a.date));
+      const catEntries=expenses.filter(e=>(e.category||'Uncategorized')===cat).sort((a,b)=>b.amount-a.amount);
       const subList=document.createElement('div');subList.style.cssText='border-top:1px solid var(--divider);margin-top:.5rem;padding-top:.25rem;';
       catEntries.forEach(e=>{const d=new Date(e.date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});const row=document.createElement('div');row.style.cssText='display:flex;justify-content:space-between;padding:.4rem .25rem;font-size:.85rem;border-bottom:1px solid var(--divider);';row.innerHTML=`<span style="color:var(--txt)">${esc(e.item)} <span style="color:var(--muted);font-size:.75rem">${d}</span></span><span style="font-weight:700;font-variant-numeric:tabular-nums">${fmtDec(e.amount)}</span>`;subList.appendChild(row);});
       el.appendChild(subList);
