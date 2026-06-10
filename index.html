@@ -305,7 +305,7 @@
       </div>
       <div class="card">
         <div class="card-body">
-          <div class="card-title">Yearly Overview (Aug – Jul)</div>
+          <div class="card-title">Yearly Overview (Sep – Aug)</div>
           <div id="net-yearly-list"></div>
         </div>
       </div>
@@ -431,9 +431,9 @@ async function loadFromSheet(){
 
 
 function getFinancialYear(mk){
-  // financial year Aug-Jul: if month >= 8, year = year; else year = year-1
+  // financial year Sep-Aug: if month >= 9, year = year; else year = year-1
   const [y,m] = mk.split('-').map(Number);
-  const fyStart = m >= 8 ? y : y - 1;
+  const fyStart = m >= 9 ? y : y - 1;
   return `${fyStart}–${String(fyStart+1).slice(2)}`;
 }
 
