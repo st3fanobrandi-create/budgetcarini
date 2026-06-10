@@ -505,14 +505,17 @@ function renderBreakdown(){
   const savEl=document.getElementById('bd-sav');savEl.textContent=fmt(sav);savEl.className='strip-value '+(sav<0?'negative':'positive');
   const allMonths=allFinancialMonths().filter(m=>m!==bdMonth);const avgMap={};
   categories.forEach(cat=>{if(!allMonths.length){avgMap[cat]=0;return;}const totals=allMonths.map(m=>entriesForMonth(m).filter(e=>e.type==='expense'&&e.category===cat).reduce((s,e)=>s+e.amount,0));const active=totals.filter(t=>t>0);avgMap[cat]=active.length?active.reduce((a,b)=>a+b,0)/active.length:0;});
+  const currentMK=getFinancialMonthKey(new Date());
+  let monthProgress=1;
+  if(bdMonth===currentMK){const[y,m]=bdMonth.split('-').map(Number);const start=new Date(y,m-2,25);const end=new Date(y,m-1,24,23,59,59);const now=new Date();const total=end-start;const elapsed=Math.min(now-start,total);monthProgress=Math.max(0,Math.min(elapsed/total,1));}
   const catTotals={};expenses.forEach(e=>{const k=e.category||'Uncategorized';catTotals[k]=(catTotals[k]||0)+e.amount;});
   const sorted=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
   const list=document.getElementById('bdCatList');list.innerHTML='';
   if(!sorted.length){list.innerHTML='<div class="empty"><div class="empty-icon">📭</div>No expenses this month yet.</div>';}
-  else{sorted.forEach(([cat,amount])=>{const avg=avgMap[cat]||0;const maxVal=Math.max(amount,avg,1);const pct=Math.min((amount/maxVal)*100,100);const over=avg>0&&amount>avg;const under=avg>0&&amount<avg;const diff=avg>0?((amount-avg)/avg*100):null;const diffText=diff===null?'No history':diff>0?`+${Math.round(diff)}% vs avg`:`${Math.round(diff)}% vs avg`;const diffClass=over?'over':under?'under':'same';
+  else{sorted.forEach(([cat,amount])=>{const avg=avgMap[cat]||0;const proratedAvg=avg*monthProgress;const maxVal=Math.max(amount,proratedAvg,1);const pct=Math.min((amount/maxVal)*100,100);const over=proratedAvg>0&&amount>proratedAvg;const under=proratedAvg>0&&amount<proratedAvg;const diff=proratedAvg>0?((amount-proratedAvg)/proratedAvg*100):null;const diffText=diff===null?'No history':diff>0?`+${Math.round(diff)}% vs avg`:`${Math.round(diff)}% vs avg`;const diffClass=over?'over':under?'under':'same';
     const isExpanded=expandedCat===cat;
     const el=document.createElement('div');el.className='cat-item';el.style.cursor='pointer';
-    el.innerHTML=`<div class="cat-item-top"><span class="cat-name">${esc(cat)} <span style="font-size:.7rem;color:var(--muted)">${isExpanded?'▲':'▼'}</span></span><span class="cat-amount">${fmtDec(amount)}</span></div><div class="progress-bar"><div class="progress-fill${over?' over':''}" style="width:${pct}%"></div></div><div class="cat-meta"><span class="cat-avg">${avg>0?'Avg: '+fmt(avg):'No history yet'}</span><span class="cat-diff ${diffClass}">${diffText}</span></div>`;
+    el.innerHTML=`<div class="cat-item-top"><span class="cat-name">${esc(cat)} <span style="font-size:.7rem;color:var(--muted)">${isExpanded?'▲':'▼'}</span></span><span class="cat-amount">${fmtDec(amount)}</span></div><div class="progress-bar"><div class="progress-fill${over?' over':''}" style="width:${pct}%"></div></div><div class="cat-meta"><span class="cat-avg">${proratedAvg>0?(monthProgress<1?'Avg to date: '+fmt(proratedAvg)+' · Avg: '+fmt(avg):'Avg: '+fmt(avg)):'No history yet'}</span><span class="cat-diff ${diffClass}">${diffText}</span></div>`;
     if(isExpanded){
       const catEntries=expenses.filter(e=>(e.category||'Uncategorized')===cat).sort((a,b)=>b.amount-a.amount);
       const subList=document.createElement('div');subList.style.cssText='border-top:1px solid var(--divider);margin-top:.5rem;padding-top:.25rem;';
