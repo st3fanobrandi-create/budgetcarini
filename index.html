@@ -227,11 +227,11 @@
         <div class="strip-card"><div class="strip-label">Income</div><div class="strip-value positive" id="bd-inc">—</div></div>
         <div class="strip-card"><div class="strip-label">Saved</div><div class="strip-value" id="bd-sav">—</div></div>
       </div>
-      <div class="card"><div id="bdCatList"></div></div>
       <div class="card chart-section">
         <div class="card-title">Spending by category</div>
         <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
       </div>
+      <div class="card"><div id="bdCatList"></div></div>
     </div>
 
     <!-- TAB 3: LIST -->
@@ -244,18 +244,16 @@
     </div>
 
     <!-- TAB 4: NOTES -->
-    <div class="tab-pane" id="pane-notes">
+    <div class="tab-pane" id="pane-invest">
+      <!-- Savings notes -->
       <div class="card"><div class="card-body">
         <div class="card-title">💭 My savings notes</div>
         <textarea class="notes-textarea" id="notesArea" placeholder="Write anything here — goals, reminders, thoughts about your savings…"></textarea>
         <button class="notes-save" id="notesSaveBtn">Save notes</button>
         <div class="notes-status" id="notesStatus"></div>
       </div></div>
-    </div>
 
-    <!-- TAB 5: INVESTMENTS -->
-    <div class="tab-pane" id="pane-invest">
-      <!-- Notes -->
+      <!-- Investment notes -->
       <div class="card"><div class="card-body">
         <div class="card-title">📋 Investment notes</div>
         <textarea class="notes-textarea" id="investNotesArea" placeholder="Notes about your investments — strategy, rebalancing thoughts, reminders…" style="min-height:140px"></textarea>
@@ -287,7 +285,33 @@
     </div>
   </div>
 
-  <!-- TAB BAR -->
+    <!-- TAB 6: NET -->
+    <div class="tab-pane" id="pane-net">
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Avg Monthly Income</div>
+          <div class="kpi-value" id="net-avg-inc">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Avg Monthly Spending</div>
+          <div class="kpi-value" id="net-avg-exp">—</div>
+        </div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi-card" style="grid-column:1/-1">
+          <div class="kpi-label">Avg Monthly Net</div>
+          <div class="kpi-value" id="net-avg-net">—</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="card-title">Yearly Overview (Aug – Jul)</div>
+          <div id="net-yearly-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB BAR -->
   <nav class="tab-bar">
     <button class="tab-btn active" data-tab="add">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>Add
@@ -298,11 +322,11 @@
     <button class="tab-btn" data-tab="list">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Entries
     </button>
-    <button class="tab-btn" data-tab="notes">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Notes
-    </button>
     <button class="tab-btn" data-tab="invest">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Invest
+    </button>
+    <button class="tab-btn" data-tab="net">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Net
     </button>
   </nav>
 </div>
@@ -405,9 +429,72 @@ async function loadFromSheet(){
   }catch(err){setSyncing('err','Could not reach sheet');showToast('⚠️ Could not load from sheet',4000);renderAll();}
 }
 
-function renderAll(){renderCatOptions();renderCatEditor();renderTab1();renderBreakdown();renderList();}
+
+function getFinancialYear(mk){
+  // financial year Aug-Jul: if month >= 8, year = year; else year = year-1
+  const [y,m] = mk.split('-').map(Number);
+  const fyStart = m >= 8 ? y : y - 1;
+  return `${fyStart}–${String(fyStart+1).slice(2)}`;
+}
+
+function renderNet(){
+  const months = allFinancialMonths();
+  if(!months.length){
+    document.getElementById('net-avg-inc').textContent='—';
+    document.getElementById('net-avg-exp').textContent='—';
+    document.getElementById('net-avg-net').textContent='—';
+    document.getElementById('net-yearly-list').innerHTML='<div class="empty"><div class="empty-icon">📊</div>No data yet.</div>';
+    return;
+  }
+  // Averages across all months that have any entries
+  let totalInc=0, totalExp=0, activeMonths=0;
+  months.forEach(mk=>{
+    const mo = entriesForMonth(mk);
+    if(!mo.length) return;
+    activeMonths++;
+    totalInc += mo.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
+    totalExp += mo.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+  });
+  const avgInc = activeMonths ? totalInc/activeMonths : 0;
+  const avgExp = activeMonths ? totalExp/activeMonths : 0;
+  const avgNet = avgInc - avgExp;
+  document.getElementById('net-avg-inc').textContent = fmt(avgInc);
+  document.getElementById('net-avg-exp').textContent = fmt(avgExp);
+  const netEl = document.getElementById('net-avg-net');
+  netEl.textContent = fmt(avgNet);
+  netEl.className = 'kpi-value ' + (avgNet >= 0 ? 'positive' : 'negative');
+
+  // Yearly breakdown Aug-Jul
+  const yearMap = {};
+  months.forEach(mk=>{
+    const fy = getFinancialYear(mk);
+    if(!yearMap[fy]) yearMap[fy] = {inc:0, exp:0};
+    const mo = entriesForMonth(mk);
+    yearMap[fy].inc += mo.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
+    yearMap[fy].exp += mo.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+  });
+  const sortedYears = Object.keys(yearMap).sort().reverse();
+  const list = document.getElementById('net-yearly-list');
+  list.innerHTML = sortedYears.map(fy=>{
+    const {inc,exp} = yearMap[fy];
+    const net = inc - exp;
+    const cls = net >= 0 ? 'positive' : 'negative';
+    return `<div class="entry-item">
+      <div class="entry-left"><div class="entry-name">${fy}</div></div>
+      <div class="entry-right" style="flex-direction:row;gap:.75rem;align-items:center">
+        <span style="font-size:.78rem;color:var(--muted)">In: <strong>${fmt(inc)}</strong></span>
+        <span style="font-size:.78rem;color:var(--muted)">Out: <strong>${fmt(exp)}</strong></span>
+        <span class="entry-amount ${cls}">${fmt(net)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll(){renderCatOptions();renderCatEditor();renderTab1();renderBreakdown();renderList();renderNet();}
 
 function renderTab1(){const mk=getFinancialMonthKey(new Date());const mo=entriesForMonth(mk);const exp=mo.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);const inc=mo.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);const sav=inc-exp;document.getElementById('k-exp').textContent=fmt(exp);document.getElementById('k-month-label').textContent=monthLabel(mk);const savEl=document.getElementById('k-sav');savEl.textContent=fmt(sav);savEl.className='kpi-value '+(sav<0?'negative':'positive');document.getElementById('k-inc-label').textContent='Income: '+fmt(inc);}
+
+let expandedCat=null;
 
 function renderBreakdown(){
   document.getElementById('bdMonthLabel').textContent=monthLabel(bdMonth);
@@ -422,7 +509,18 @@ function renderBreakdown(){
   const sorted=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
   const list=document.getElementById('bdCatList');list.innerHTML='';
   if(!sorted.length){list.innerHTML='<div class="empty"><div class="empty-icon">📭</div>No expenses this month yet.</div>';}
-  else{sorted.forEach(([cat,amount])=>{const avg=avgMap[cat]||0;const maxVal=Math.max(amount,avg,1);const pct=Math.min((amount/maxVal)*100,100);const over=avg>0&&amount>avg;const under=avg>0&&amount<avg;const diff=avg>0?((amount-avg)/avg*100):null;const diffText=diff===null?'No history':diff>0?`+${Math.round(diff)}% vs avg`:`${Math.round(diff)}% vs avg`;const diffClass=over?'over':under?'under':'same';const el=document.createElement('div');el.className='cat-item';el.innerHTML=`<div class="cat-item-top"><span class="cat-name">${esc(cat)}</span><span class="cat-amount">${fmtDec(amount)}</span></div><div class="progress-bar"><div class="progress-fill${over?' over':''}" style="width:${pct}%"></div></div><div class="cat-meta"><span class="cat-avg">${avg>0?'Avg: '+fmt(avg):'No history yet'}</span><span class="cat-diff ${diffClass}">${diffText}</span></div>`;list.appendChild(el);});}
+  else{sorted.forEach(([cat,amount])=>{const avg=avgMap[cat]||0;const maxVal=Math.max(amount,avg,1);const pct=Math.min((amount/maxVal)*100,100);const over=avg>0&&amount>avg;const under=avg>0&&amount<avg;const diff=avg>0?((amount-avg)/avg*100):null;const diffText=diff===null?'No history':diff>0?`+${Math.round(diff)}% vs avg`:`${Math.round(diff)}% vs avg`;const diffClass=over?'over':under?'under':'same';
+    const isExpanded=expandedCat===cat;
+    const el=document.createElement('div');el.className='cat-item';el.style.cursor='pointer';
+    el.innerHTML=`<div class="cat-item-top"><span class="cat-name">${esc(cat)} <span style="font-size:.7rem;color:var(--muted)">${isExpanded?'▲':'▼'}</span></span><span class="cat-amount">${fmtDec(amount)}</span></div><div class="progress-bar"><div class="progress-fill${over?' over':''}" style="width:${pct}%"></div></div><div class="cat-meta"><span class="cat-avg">${avg>0?'Avg: '+fmt(avg):'No history yet'}</span><span class="cat-diff ${diffClass}">${diffText}</span></div>`;
+    if(isExpanded){
+      const catEntries=expenses.filter(e=>(e.category||'Uncategorized')===cat).sort((a,b)=>new Date(b.date)-new Date(a.date));
+      const subList=document.createElement('div');subList.style.cssText='border-top:1px solid var(--divider);margin-top:.5rem;padding-top:.25rem;';
+      catEntries.forEach(e=>{const d=new Date(e.date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});const row=document.createElement('div');row.style.cssText='display:flex;justify-content:space-between;padding:.4rem .25rem;font-size:.85rem;border-bottom:1px solid var(--divider);';row.innerHTML=`<span style="color:var(--txt)">${esc(e.item)} <span style="color:var(--muted);font-size:.75rem">${d}</span></span><span style="font-weight:700;font-variant-numeric:tabular-nums">${fmtDec(e.amount)}</span>`;subList.appendChild(row);});
+      el.appendChild(subList);
+    }
+    el.addEventListener('click',()=>{expandedCat=(expandedCat===cat)?null:cat;renderBreakdown();});
+    list.appendChild(el);});}
   renderPie(sorted);
 }
 function renderPie(sorted){const ctx=document.getElementById('pieChart').getContext('2d');const colors=['#4f98a3','#6daa45','#fdab43','#e05c4b','#a06fdf','#e8af34','#5591c7','#d163a7','#bb653b','#da7101','#437a22','#01696f'];if(pieChart){pieChart.destroy();}if(!sorted.length)return;pieChart=new Chart(ctx,{type:'doughnut',data:{labels:sorted.map(([k])=>k),datasets:[{data:sorted.map(([,v])=>v),backgroundColor:colors.slice(0,sorted.length),borderWidth:0,hoverOffset:6}]},options:{responsive:true,cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:getComputedStyle(document.documentElement).getPropertyValue('--txt').trim(),font:{family:'Satoshi,sans-serif',size:11},padding:12,boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fmtDec(ctx.raw)}}}}});}
@@ -531,7 +629,7 @@ document.getElementById('editSaveBtn').addEventListener('click',async()=>{
 document.querySelectorAll('.segmented button').forEach(btn=>{btn.addEventListener('click',()=>{currentType=btn.dataset.type;document.querySelectorAll('.segmented button').forEach(b=>b.classList.toggle('active',b.dataset.type===currentType));renderCatOptions();});});
 
 // ── TABS ──
-document.querySelectorAll('.tab-btn').forEach(btn=>{btn.addEventListener('click',()=>{const tab=btn.dataset.tab;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='pane-'+tab));if(tab==='breakdown')renderBreakdown();if(tab==='list')renderList();});});
+document.querySelectorAll('.tab-btn').forEach(btn=>{btn.addEventListener('click',()=>{const tab=btn.dataset.tab;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='pane-'+tab));if(tab==='breakdown')renderBreakdown();if(tab==='list')renderList();if(tab==='net')renderNet();});});
 document.getElementById('bdPrev').addEventListener('click',()=>{bdMonth=addMonths(bdMonth,-1);renderBreakdown();});
 document.getElementById('bdNext').addEventListener('click',()=>{bdMonth=addMonths(bdMonth,1);renderBreakdown();});
 document.getElementById('listMonthSel').addEventListener('change',renderList);
