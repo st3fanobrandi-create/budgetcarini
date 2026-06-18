@@ -186,6 +186,7 @@
     </div>
     <div class="header-actions">
       <div class="sync-dot" id="syncDot"></div>
+      <button class="icon-btn" id="refreshBtn" aria-label="Refresh data"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
       <button class="icon-btn" id="themeBtn" aria-label="Toggle theme">◐</button>
       <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙️</button>
     </div>
@@ -313,19 +314,19 @@
 
     <!-- TAB BAR -->
   <nav class="tab-bar">
-    <button class="tab-btn active" data-tab="add">
+    <button class="tab-btn active" data-tab="add" aria-label="Add entry">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>Add
     </button>
-    <button class="tab-btn" data-tab="breakdown">
+    <button class="tab-btn" data-tab="breakdown" aria-label="Monthly breakdown">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Breakdown
     </button>
-    <button class="tab-btn" data-tab="list">
+    <button class="tab-btn" data-tab="list" aria-label="Transaction list">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Entries
     </button>
-    <button class="tab-btn" data-tab="invest">
+    <button class="tab-btn" data-tab="invest" aria-label="Notes and currency">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Invest
     </button>
-    <button class="tab-btn" data-tab="net">
+    <button class="tab-btn" data-tab="net" aria-label="Net worth overview">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Net
     </button>
   </nav>
@@ -526,7 +527,8 @@ function renderBreakdown(){
     list.appendChild(el);});}
   renderPie(sorted);
 }
-function renderPie(sorted){const ctx=document.getElementById('pieChart').getContext('2d');const colors=['#4f98a3','#6daa45','#fdab43','#e05c4b','#a06fdf','#e8af34','#5591c7','#d163a7','#bb653b','#da7101','#437a22','#01696f'];if(pieChart){pieChart.destroy();}if(!sorted.length)return;pieChart=new Chart(ctx,{type:'doughnut',data:{labels:sorted.map(([k])=>k),datasets:[{data:sorted.map(([,v])=>v),backgroundColor:colors.slice(0,sorted.length),borderWidth:0,hoverOffset:6}]},options:{responsive:true,cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:getComputedStyle(document.documentElement).getPropertyValue('--txt').trim(),font:{family:'Satoshi,sans-serif',size:11},padding:12,boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fmtDec(ctx.raw)}}}}});}
+function getPieColors(){const s=getComputedStyle(document.documentElement);const v=p=>s.getPropertyValue(p).trim();return[v('--pri')||'#4f98a3',v('--ok')||'#6daa45',v('--warn')||'#fdab43',v('--err')||'#e05c4b','#a06fdf',v('--gold')||'#e8af34','#5591c7','#d163a7','#bb653b','#da7101','#437a22','#01696f'];}
+function renderPie(sorted){const ctx=document.getElementById('pieChart').getContext('2d');const colors=getPieColors();if(pieChart){pieChart.destroy();}if(!sorted.length)return;pieChart=new Chart(ctx,{type:'doughnut',data:{labels:sorted.map(([k])=>k),datasets:[{data:sorted.map(([,v])=>v),backgroundColor:colors.slice(0,sorted.length),borderWidth:0,hoverOffset:6}]},options:{responsive:true,cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:getComputedStyle(document.documentElement).getPropertyValue('--txt').trim(),font:{family:'Satoshi,sans-serif',size:11},padding:12,boxWidth:10,boxHeight:10}},tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fmtDec(ctx.raw)}}}}});}
 
 function renderList(){
   const sel=document.getElementById('listMonthSel');const cur=sel.value;const months=allFinancialMonths();
@@ -540,7 +542,7 @@ function renderList(){
   if(filterCat)mo=mo.filter(e=>e.category===filterCat);
   const list=document.getElementById('entryList');list.innerHTML='';
   if(!mo.length){list.innerHTML='<div class="empty"><div class="empty-icon">📭</div>No entries found.</div>';return;}
-  mo.forEach(entry=>{const d=new Date(entry.date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});const el=document.createElement('div');el.className='entry-item';el.innerHTML=`<div class="entry-left"><div class="entry-name">${esc(entry.item)}</div><div class="entry-meta">${d}${entry.category?' · '+esc(entry.category):''}</div></div><div class="entry-right"><span class="entry-amount">${fmtDec(entry.amount)}</span><span class="pill ${entry.type==='income'?'i-pill':'e-pill'}">${entry.type}</span></div><div class="entry-actions"><button class="edit-btn" aria-label="Edit">✏️</button><button class="del-btn" aria-label="Delete">✕</button></div>`;el.querySelector('.edit-btn').onclick=()=>openEditDrawer(entry.id);el.querySelector('.del-btn').onclick=()=>deleteEntry(entry.id);list.appendChild(el);});
+  mo.forEach(entry=>{const d=new Date(entry.date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});const el=document.createElement('div');el.className='entry-item';el.innerHTML=`<div class="entry-left"><div class="entry-name">${esc(entry.item)}</div><div class="entry-meta">${d}${entry.category?' · '+esc(entry.category):''}</div></div><div class="entry-right"><span class="entry-amount">${fmtDec(entry.amount)}</span><span class="pill ${entry.type==='income'?'i-pill':'e-pill'}">${entry.type}</span></div><div class="entry-actions"><button class="edit-btn" aria-label="Edit entry"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="del-btn" aria-label="Delete entry"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></div>`;el.querySelector('.edit-btn').onclick=()=>openEditDrawer(entry.id);el.querySelector('.del-btn').onclick=()=>deleteEntry(entry.id);list.appendChild(el);});
 }
 
 function renderCatOptions(){const sel=document.getElementById('fCat');sel.innerHTML=categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');const isIncome=currentType==='income';sel.disabled=isIncome;document.getElementById('fCatWrap').style.display=isIncome?'none':'flex';}
@@ -549,7 +551,18 @@ function renameCategory(i,val){const v=(val||'').trim();if(!v)return;const old=c
 function deleteCategory(i){const cat=categories[i];if(!confirm(`Delete "${cat}"?`))return;categories.splice(i,1);if(!categories.includes('Uncategorized'))categories.push('Uncategorized');entries.forEach(e=>{if(e.category===cat)e.category='Uncategorized';});apiPost({action:'updateCategories',categories});renderAll();showToast('Category deleted');}
 function addCategory(){const v=document.getElementById('newCatInput').value.trim();if(!v)return;if(categories.some(c=>c.toLowerCase()===v.toLowerCase())){showToast('Already exists');return;}categories.push(v);document.getElementById('newCatInput').value='';apiPost({action:'updateCategories',categories});renderAll();showToast('Category added');}
 
-async function deleteEntry(id){if(!confirm('Delete this entry?'))return;entries=entries.filter(e=>e.id!==id);renderAll();setSyncing('syncing','Deleting…');await apiPost({action:'deleteEntry',id});await loadFromSheet();showToast('Entry deleted');}
+async function deleteEntry(id){
+  const entry=entries.find(e=>e.id===id);if(!entry)return;
+  entries=entries.filter(e=>e.id!==id);renderAll();
+  let committed=false;
+  const t=document.getElementById('toast');
+  t.innerHTML='Entry deleted <button id="undoDelBtn" style="font-weight:700;text-decoration:underline;background:none;border:none;color:inherit;cursor:pointer;padding:0;font-size:inherit">Undo</button>';
+  t.classList.add('show');clearTimeout(showToast._t);
+  const commit=async()=>{if(committed)return;committed=true;t.classList.remove('show');setSyncing('syncing','Deleting…');await apiPost({action:'deleteEntry',id});await loadFromSheet();};
+  const undo=()=>{if(committed)return;committed=true;clearTimeout(showToast._t);t.classList.remove('show');entries.push(entry);entries.sort((a,b)=>b.date.localeCompare(a.date));renderAll();showToast('↩ Entry restored');};
+  const undoBtn=document.getElementById('undoDelBtn');if(undoBtn)undoBtn.addEventListener('click',undo);
+  showToast._t=setTimeout(commit,4500);
+}
 
 document.getElementById('entryForm').addEventListener('submit',async ev=>{ev.preventDefault();const item=document.getElementById('fItem').value.trim();const amount=parseFloat(document.getElementById('fAmount').value);const date=document.getElementById('fDate').value;if(!item||!amount||!date)return;const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='Saving…';const entry={id:crypto.randomUUID(),type:currentType,date,item,category:currentType==='income'?'':document.getElementById('fCat').value,amount};entries.push(entry);bdMonth=getFinancialMonthKey(date);renderAll();document.getElementById('entryForm').reset();document.getElementById('fDate').value=new Date().toISOString().slice(0,10);setSyncing('syncing','Saving…');await apiPost({action:'addEntry',...entry});await loadFromSheet();btn.disabled=false;btn.textContent='Save entry';showToast('✓ Entry saved');});
 
@@ -580,7 +593,16 @@ async function loadRates(){
       document.getElementById('ratesUpdatedUSD').textContent=upd;
       document.getElementById('ratesUpdatedEUR').textContent=upd;
     }
-  }catch(e){document.getElementById('rateBadgeUSD').textContent='Rate unavailable';document.getElementById('rateBadgeEUR').textContent='Rate unavailable';}
+  }catch(e){
+    const msg='Rates unavailable — check connection';
+    document.getElementById('rateBadgeUSD').textContent=msg;
+    document.getElementById('rateBadgeEUR').textContent=msg;
+    document.getElementById('ratesUpdatedUSD').textContent='Could not fetch live rates';
+    document.getElementById('ratesUpdatedEUR').textContent='Could not fetch live rates';
+    document.getElementById('copInputUSD').disabled=true;document.getElementById('copInputUSD').placeholder='Unavailable';
+    document.getElementById('copInputEUR').disabled=true;document.getElementById('copInputEUR').placeholder='Unavailable';
+    document.getElementById('usdResult').textContent='—';document.getElementById('eurResult').textContent='—';
+  }
 }
 function calcUSD(){if(!rateUSD)return;const v=parseFloat(document.getElementById('copInputUSD').value)||0;document.getElementById('usdResult').textContent=v?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(v/rateUSD):'—';}
 function calcEUR(){if(!rateEUR)return;const v=parseFloat(document.getElementById('copInputEUR').value)||0;document.getElementById('eurResult').textContent=v?new Intl.NumberFormat('en-US',{style:'currency',currency:'EUR',minimumFractionDigits:2}).format(v/rateEUR):'—';}
@@ -649,10 +671,36 @@ document.getElementById('newCatInput').addEventListener('keydown',e=>{if(e.key==
 // ── THEME ──
 document.getElementById('themeBtn').addEventListener('click',()=>{const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',t);if(pieChart)renderBreakdown();});
 
+// ── REFRESH BUTTON ──
+document.getElementById('refreshBtn').addEventListener('click',async()=>{
+  const btn=document.getElementById('refreshBtn');
+  btn.style.opacity='0.4';btn.style.pointerEvents='none';
+  await loadFromSheet();
+  btn.style.opacity='';btn.style.pointerEvents='';
+});
+
+// ── AUTO-REFRESH POLLING every 30s — keeps two devices in sync ──
+let _pollTimer=null;
+function startPolling(){
+  clearInterval(_pollTimer);
+  _pollTimer=setInterval(async()=>{
+    if(document.getElementById('syncDot').classList.contains('syncing'))return;
+    try{
+      const resp=await gvizFetch('Entries');
+      const fresh=gvizToEntries(resp);
+      const hashNew=fresh.map(e=>e.id+'|'+e.amount+'|'+e.date).sort().join();
+      const hashOld=entries.map(e=>e.id+'|'+e.amount+'|'+e.date).sort().join();
+      if(hashNew!==hashOld){entries=fresh;renderAll();
+        const n=entries.length;setSyncing('ok',n+' entr'+(n===1?'y':'ies')+' · '+new Date().toLocaleTimeString());}
+    }catch(_){}
+  },30000);
+}
+
 // ── INIT ──
 document.getElementById('fDate').value=new Date().toISOString().slice(0,10);
 loadFromSheet();
 loadRates();
+startPolling();
 </script>
 <script data-pplx-inline-edit>
 (function () {
